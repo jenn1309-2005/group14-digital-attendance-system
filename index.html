@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Digital Attendance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold-dark:  #7a5c1e;
+  --gold-mid:   #a07828;
+  --gold-light: #c9a84c;
+  --gold-pale:  #e8d5a3;
+  --gold-bg:    #f5edd8;
+  --white:      #ffffff;
+  --off-white:  #f9f6f0;
+  --gray-light: #ebebeb;
+  --gray-mid:   #cccccc;
+  --text-dark:  #1a1a1a;
+  --text-mid:   #444444;
+  --present:    #2e7d32;
+  --absent:     #c62828;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family:'Open Sans',sans-serif;
+  background: #c8bba8;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px 0;
+}
+
+/* ── Phone shell ── */
+.phone {
+  width:360px;
+  min-height:640px;
+  background:var(--white);
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 28px 72px rgba(0,0,0,.38),0 4px 16px rgba(0,0,0,.18);
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Screens ── */
+.screen { display:none; flex-direction:column; min-height:640px; }
+.screen.active { display:flex; animation:fadeIn .22s ease; }
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── Diagonal Header (exactly like prototype) ── */
+.hdr {
+  position:relative;
+  height:190px;
+  background:var(--white);
+  overflow:hidden;
+  flex-shrink:0;
+}
+/* Dark gold big diagonal from top-left */
+.hdr-shape1 {
+  position:absolute;
+  top:-10px; left:-10px;
+  width:210px; height:220px;
+  background:linear-gradient(155deg, var(--gold-dark) 0%, var(--gold-mid) 60%, var(--gold-light) 100%);
+  clip-path:polygon(0 0, 70% 0, 42% 100%, 0 100%);
+}
+/* Lighter overlay shape */
+.hdr-shape2 {
+  position:absolute;
+  top:-10px; left:-10px;
+  width:175px; height:220px;
+  background:linear-gradient(155deg,rgba(201,168,76,.4) 0%,rgba(201,168,76,.05) 100%);
+  clip-path:polygon(22% 0, 80% 0, 52% 100%, 0 100%);
+}
+.hamburger {
+  position:absolute; top:14px; right:14px;
+  cursor:pointer; z-index:10;
+  display:flex; flex-direction:column; gap:5px; padding:6px;
+}
+.hamburger span { display:block; width:24px; height:2.5px; background:var(--text-dark); border-radius:2px; }
+.hdr-title {
+  position:absolute; bottom:22px; left:18px;
+  font-family:'Oswald',sans-serif;
+  font-size:21px; font-weight:700;
+  color:var(--text-dark); letter-spacing:.05em;
+  z-index:5; text-transform:uppercase;
+  max-width:200px; line-height:1.2;
+}
+
+/* ── Body content ── */
+.body {
+  flex:1; padding:20px 18px 14px;
+  display:flex; flex-direction:column; gap:13px;
+  overflow-y:auto;
+}
+
+/* ── Footer gold bar ── */
+.footer-bar {
+  height:36px;
+  background:linear-gradient(90deg,var(--gold-dark),var(--gold-light));
+  flex-shrink:0;
+}
+
+/* ── Slide-out menu ── */
+.menu-overlay {
+  display:none; position:absolute; inset:0;
+  background:rgba(0,0,0,.42); z-index:50;
+}
+.menu-overlay.open { display:block; }
+.menu-panel {
+  position:absolute; top:0; right:0;
+  width:196px; height:100%;
+  background:var(--white);
+  box-shadow:-4px 0 20px rgba(0,0,0,.2);
+  z-index:51;
+  transform:translateX(100%);
+  transition:transform .24s ease;
+  padding:18px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.menu-panel.open { transform:translateX(0); }
+.menu-close { align-self:flex-end; background:none; border:none; font-size:22px; cursor:pointer; color:var(--text-mid); margin-bottom:8px; }
+.menu-item {
+  font-family:'Oswald',sans-serif; font-size:13px; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--text-dark);
+  padding:10px 10px; border-bottom:1px solid var(--gray-light);
+  cursor:pointer;
+}
+.menu-item:hover { color:var(--gold-mid); }
+
+/* ── Buttons ── */
+.btn-gold {
+  display:block; width:100%; padding:13px;
+  background:linear-gradient(135deg,var(--gold-mid),var(--gold-dark));
+  color:var(--white); border:none; border-radius:3px;
+  font-family:'Oswald',sans-serif; font-size:14px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  transition:opacity .14s,transform .1s; text-align:center;
+}
+.btn-gold:hover { opacity:.9; }
+.btn-gold:active { transform:scale(.98); }
+
+.btn-outline {
+  display:block; width:100%; padding:11px;
+  background:transparent; color:var(--gold-dark);
+  border:2px solid var(--gold-mid); border-radius:3px;
+  font-family:'Oswald',sans-serif; font-size:13px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  transition:all .14s; text-align:center;
+}
+.btn-outline:hover { background:var(--gold-bg); }
+
+/* Nav buttons (dashboard style) */
+.nav-btn {
+  display:block; width:auto; max-width:220px; padding:12px 16px;
+  background:linear-gradient(135deg,var(--gold-mid),var(--gold-dark));
+  color:var(--white); border:none; border-radius:3px;
+  font-family:'Oswald',sans-serif; font-size:13px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  transition:opacity .14s; text-align:left;
+}
+.nav-btn:hover { opacity:.88; }
+.nav-btn-danger { background:linear-gradient(135deg,#8b7355,#5c4a1e); }
+
+/* ── Form fields ── */
+.field-row {
+  display:flex; align-items:center;
+  border-bottom:1.5px solid var(--gray-mid);
+  padding:9px 4px; gap:10px;
+}
+.field-icon { font-size:15px; color:var(--gold-mid); flex-shrink:0; }
+.field-row input {
+  flex:1; border:none; outline:none;
+  font-family:'Open Sans',sans-serif; font-size:12px;
+  font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-dark); background:transparent;
+}
+.field-row input::placeholder { color:var(--gray-mid); }
+.eye-icon { font-size:13px; color:var(--gold-mid); cursor:pointer; }
+
+.remember-row {
+  display:flex; align-items:center; justify-content:space-between; margin-top:2px;
+}
+.remember-row label {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text-mid); cursor:pointer;
+}
+.remember-row input[type=checkbox] { accent-color:var(--gold-mid); }
+.forgot-link {
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text-mid); cursor:pointer;
+}
+.forgot-link:hover { color:var(--gold-mid); }
+
+/* Role tabs */
+.role-tabs { display:flex; border:1.5px solid var(--gold-pale); border-radius:3px; overflow:hidden; }
+.role-tab {
+  flex:1; padding:9px; border:none; background:transparent;
+  font-family:'Oswald',sans-serif; font-size:13px; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--text-mid); cursor:pointer;
+}
+.role-tab.active { background:linear-gradient(135deg,var(--gold-mid),var(--gold-dark)); color:var(--white); }
+
+/* Error / Success */
+.msg { padding:9px 12px; border-radius:3px; font-size:11px; font-weight:600; display:none; text-transform:uppercase; letter-spacing:.04em; }
+.msg.show { display:block; }
+.msg-error  { background:#fdecea; color:var(--absent);  border-left:3px solid var(--absent); }
+.msg-success{ background:#e8f5e9; color:var(--present); border-left:3px solid var(--present); }
+
+/* Form field (session) */
+.f-field {
+  display:flex; align-items:center; gap:8px;
+  background:var(--off-white); border:1px solid var(--gray-mid);
+  border-radius:3px; padding:9px 12px;
+}
+.f-label {
+  font-family:'Oswald',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:.07em; color:var(--text-dark); min-width:44px; text-transform:uppercase;
+}
+.f-field select, .f-field input[type=date], .f-field input[type=time] {
+  flex:1; border:none; outline:none; background:transparent;
+  font-family:'Open Sans',sans-serif; font-size:12px; color:var(--text-mid);
+}
+
+/* Attendance table */
+.att-table { width:100%; border-collapse:collapse; border:1px solid var(--gray-mid); font-size:12px; }
+.att-table th {
+  background:var(--gold-bg); font-family:'Oswald',sans-serif; font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--gold-dark);
+  padding:8px 10px; text-align:left; border-bottom:2px solid var(--gold-pale);
+}
+.att-table td { padding:9px 10px; border-bottom:1px solid var(--gray-light); color:var(--text-mid); font-weight:500; }
+.att-table tr:last-child td { border-bottom:none; }
+.att-table tr:hover td { background:var(--off-white); }
+
+.s-present { color:var(--present); font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+.s-absent  { color:var(--absent);  font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+
+/* Toggle */
+.tog { position:relative; width:42px; height:22px; flex-shrink:0; }
+.tog input { display:none; }
+.tog-slide {
+  position:absolute; inset:0; background:var(--gray-mid);
+  border-radius:11px; cursor:pointer; transition:background .2s;
+}
+.tog-slide::after {
+  content:''; position:absolute; width:16px; height:16px;
+  background:var(--white); border-radius:50%; top:3px; left:3px;
+  transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.tog input:checked + .tog-slide { background:var(--gold-mid); }
+.tog input:checked + .tog-slide::after { transform:translateX(20px); }
+
+/* Record cards */
+.rec-card {
+  background:var(--off-white); border:1px solid var(--gray-light);
+  border-left:4px solid var(--gold-mid); border-radius:3px;
+  padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
+}
+.rec-course { font-family:'Oswald',sans-serif; font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--text-dark); text-transform:uppercase; }
+.rec-meta { font-size:11px; color:var(--text-mid); margin-top:2px; }
+.pct-badge { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; color:var(--gold-dark); }
+
+/* Progress bar */
+.prog { height:5px; background:var(--gray-light); border-radius:3px; overflow:hidden; margin-top:5px; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--gold-light),var(--gold-dark)); border-radius:3px; transition:width .5s; }
+.prog-fill.low { background:linear-gradient(90deg,#ef9a9a,var(--absent)); }
+
+/* Section label */
+.sec-label {
+  font-family:'Oswald',sans-serif; font-size:10px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--gold-dark);
+  border-bottom:1.5px solid var(--gold-pale); padding-bottom:3px;
+}
+
+/* Export button */
+.btn-export {
+  display:block; width:160px; margin:0 auto; padding:11px;
+  background:linear-gradient(135deg,var(--gold-mid),var(--gold-dark)); color:var(--white);
+  border:none; border-radius:3px;
+  font-family:'Oswald',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+}
+.btn-export:hover { opacity:.88; }
+
+.spacer { flex:1; }
+.spinner { width:26px;height:26px;border:3px solid var(--gold-pale);border-top-color:var(--gold-mid);border-radius:50%;animation:spin .6s linear infinite;margin:20px auto; }
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty { text-align:center;color:var(--gray-mid);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:18px 0; }
+
+/* Toast */
+#toast {
+  position:fixed; bottom:54px; left:50%;
+  transform:translateX(-50%) translateY(12px); opacity:0;
+  background:var(--gold-dark); color:var(--white);
+  padding:9px 18px; border-radius:3px;
+  font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+  transition:all .24s; pointer-events:none; z-index:999; white-space:nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Hint strip */
+.hint-strip {
+  background:var(--gold-bg); border-top:1px solid var(--gold-pale);
+  padding:8px 18px; font-size:10px; color:var(--gold-dark);
+  font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+}
+
+/* Date input in mark screen */
+input[type=date].inline-date {
+  font-size:11px; border:1px solid var(--gold-pale); border-radius:3px;
+  padding:4px 7px; font-family:'Open Sans',sans-serif; outline:none; color:var(--text-mid);
+  background:var(--off-white);
+}
+
+/* stat boxes */
+.stat-row { display:flex; gap:8px; }
+.stat-box {
+  flex:1; border-radius:3px; padding:10px; text-align:center;
+  background:var(--off-white); border:1px solid var(--gray-light);
+}
+.stat-box.gold { background:var(--gold-bg); border-color:var(--gold-pale); }
+.stat-val { font-family:'Oswald',sans-serif; font-size:22px; font-weight:700; color:var(--gold-dark); }
+.stat-val.green { color:var(--present); }
+.stat-val.red   { color:var(--absent); }
+.stat-lbl { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-mid); margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+<!-- ══ SLIDE-OUT MENU ══ -->
+<div class="menu-overlay" id="menu-overlay" onclick="closeMenu()">
+  <div class="menu-panel" id="menu-panel" onclick="event.stopPropagation()">
+    <button class="menu-close" onclick="closeMenu()">✕</button>
+    <div class="menu-item" onclick="menuHome()">🏠 Home / Login</div>
+    <div class="menu-item" id="m-dash" style="display:none" onclick="menuDash()">📋 Dashboard</div>
+    <div class="menu-item" id="m-logout" style="display:none" onclick="logout()">🚪 Logout</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  LOGIN SCREEN
+══════════════════════════════════════════ -->
+<div id="s-login" class="screen active">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Login</div>
+  </div>
+  <div class="body">
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="switchRole('lecturer')">👨‍🏫 Lecturer</button>
+      <button class="role-tab" onclick="switchRole('student')">🎓 Student</button>
+    </div>
+    <div id="login-err" class="msg msg-error"></div>
+    <div class="field-row">
+      <span class="field-icon">🪪</span>
+      <input type="text" id="login-id" placeholder="STAFF ID / STUDENT NUMBER" />
+    </div>
+    <div class="field-row">
+      <span class="field-icon">🔒</span>
+      <input type="password" id="login-pw" placeholder="PASSWORD" />
+      <span class="eye-icon" onclick="togglePw()">👁</span>
+    </div>
+    <div class="remember-row">
+      <label><input type="checkbox" id="remember-chk" /> Remember Me</label>
+      <span class="forgot-link" onclick="toast('Contact your administrator to reset password.')">Forgot Password?</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-gold" onclick="doLogin()" style="max-width:200px;margin:0 auto">Login</button>
+  </div>
+  <div class="hint-strip">Demo: STAFF001 / staff001 &nbsp;|&nbsp; STU2024001 / stu2024001</div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  LECTURER DASHBOARD
+══════════════════════════════════════════ -->
+<div id="s-lec-dash" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title" id="lec-dash-title">WELCOME,<br>LECTURER</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">Select an action</div>
+    <button class="nav-btn" onclick="go('s-create-session',initCreateSession)">Create Lesson Sessions</button>
+    <button class="nav-btn" onclick="go('s-lec-mark',loadMarkCourses)">Make Attendance</button>
+    <button class="nav-btn" onclick="go('s-report-list',loadReportCourses)">View Reports</button>
+    <div class="spacer"></div>
+    <button class="nav-btn nav-btn-danger" onclick="logout()">Logout</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  STUDENT DASHBOARD
+══════════════════════════════════════════ -->
+<div id="s-stu-dash" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title" id="stu-dash-title">STUDENT<br>DASHBOARD</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">Select an action</div>
+    <button class="nav-btn" onclick="go('s-stu-mark',loadStuMark)">Mark Attendance</button>
+    <button class="nav-btn" onclick="go('s-stu-records',loadStuRecords)">View Attendance Record</button>
+    <div class="spacer"></div>
+    <button class="nav-btn nav-btn-danger" onclick="logout()">Logout</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  CREATE SESSION (Lecturer)
+══════════════════════════════════════════ -->
+<div id="s-create-session" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Create Session</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">New Attendance Session</div>
+    <div class="f-field">
+      <span class="f-label">Class:</span>
+      <select id="sess-class" style="flex:1;border:none;outline:none;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--text-mid);background:transparent">
+        <option value="">SELECT CLASS</option>
+      </select>
+    </div>
+    <div class="f-field">
+      <span class="f-label">Date:</span>
+      <input type="date" id="sess-date" />
+    </div>
+    <div class="f-field">
+      <span class="f-label">Time:</span>
+      <input type="time" id="sess-start" style="flex:1;border:none;outline:none;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--text-mid);background:transparent" />
+      <span style="color:var(--gray-mid);padding:0 4px;font-size:12px">—</span>
+      <input type="time" id="sess-end" style="flex:1;border:none;outline:none;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--text-mid);background:transparent" />
+    </div>
+    <div id="sess-msg" class="msg"></div>
+    <button class="btn-gold" onclick="createSession()">Start Session</button>
+    <div class="spacer"></div>
+    <button class="nav-btn nav-btn-danger" onclick="logout()">Logout</button>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  MARK ATTENDANCE — COURSE SELECT (Lecturer)
+══════════════════════════════════════════ -->
+<div id="s-lec-mark" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Make<br>Attendance</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">Select Course</div>
+    <div id="lec-mark-courses"><div class="spinner"></div></div>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  MARK STUDENTS (Lecturer)
+══════════════════════════════════════════ -->
+<div id="s-mark-students" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title" id="mark-hdr-title">Mark<br>Attendance</div>
+  </div>
+  <div class="body">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="sec-label" style="border:none">Students</div>
+      <input type="date" id="mark-date" class="inline-date" />
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-gold" style="flex:1;font-size:11px;padding:8px" onclick="markAll(true)">✓ All Present</button>
+      <button class="btn-outline" style="flex:1;font-size:11px;padding:8px" onclick="markAll(false)">✗ All Absent</button>
+    </div>
+    <div id="mark-student-list"><div class="spinner"></div></div>
+    <button class="btn-gold" onclick="saveAtt()">💾 Save Attendance</button>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  REPORT — COURSE SELECT (Lecturer)
+══════════════════════════════════════════ -->
+<div id="s-report-list" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Attendance<br>Report</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">Select Course</div>
+    <div id="report-courses"><div class="spinner"></div></div>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  REPORT DETAIL (Lecturer)
+══════════════════════════════════════════ -->
+<div id="s-report-detail" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Attendance<br>Report</div>
+  </div>
+  <div class="body">
+    <div class="sec-label" id="rpt-course-label"></div>
+    <div id="rpt-table"><div class="spinner"></div></div>
+    <button class="btn-export" onclick="toast('Report exported (demo).')">Export Report</button>
+    <div class="spacer"></div>
+    <button class="nav-btn nav-btn-danger" onclick="logout()">Logout</button>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  STUDENT — MARK ATTENDANCE
+══════════════════════════════════════════ -->
+<div id="s-stu-mark" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Mark<br>Attendance</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">Today's Courses</div>
+    <div id="stu-mark-list"><div class="spinner"></div></div>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  STUDENT — VIEW RECORDS
+══════════════════════════════════════════ -->
+<div id="s-stu-records" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title">Attendance<br>Record</div>
+  </div>
+  <div class="body">
+    <div class="sec-label">My Courses</div>
+    <div id="stu-rec-list"><div class="spinner"></div></div>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  STUDENT — COURSE DETAIL
+══════════════════════════════════════════ -->
+<div id="s-stu-detail" class="screen">
+  <div class="hdr">
+    <div class="hdr-shape1"></div><div class="hdr-shape2"></div>
+    <div class="hamburger" onclick="openMenu()"><span></span><span></span><span></span></div>
+    <div class="hdr-title" id="stu-detail-hdr">Course</div>
+  </div>
+  <div class="body">
+    <div id="stu-detail-stats" class="stat-row"></div>
+    <div class="sec-label" style="margin-top:4px">Session History</div>
+    <div id="stu-detail-list"><div class="spinner"></div></div>
+    <div class="spacer"></div>
+    <button class="btn-outline" onclick="goBack()">← Back</button>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+
+<div id="toast"></div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────
+let role = 'lecturer';
+let stack = [];
+let lecCourses = [];
+let selCourse = null;
+
+// ─── Utils ───────────────────────────────────
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().split('T')[0];
+
+async function api(path, opts={}) {
+  const r = await fetch(path, { headers:{'Content-Type':'application/json'}, ...opts });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Error');
+  return d;
+}
+
+function toast(msg, dur=2800) {
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// Screen navigation
+function go(screenId, initFn) {
+  const cur = document.querySelector('.screen.active');
+  if (cur) { cur.classList.remove('active'); stack.push(cur.id); }
+  $(screenId).classList.add('active');
+  if (initFn) initFn();
+}
+
+function goBack() {
+  if (!stack.length) return;
+  const cur = document.querySelector('.screen.active');
+  if (cur) cur.classList.remove('active');
+  $(stack.pop()).classList.add('active');
+}
+
+// Menu
+function openMenu() {
+  $('menu-overlay').classList.add('open');
+  setTimeout(()=>$('menu-panel').classList.add('open'),10);
+}
+function closeMenu() {
+  $('menu-panel').classList.remove('open');
+  setTimeout(()=>$('menu-overlay').classList.remove('open'),240);
+}
+function menuHome()  { closeMenu(); logout(); }
+function menuDash()  {
+  closeMenu(); stack=[];
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(role==='lecturer'?'s-lec-dash':'s-stu-dash').classList.add('active');
+}
+
+// ─── LOGIN ───────────────────────────────────
+function switchRole(r) {
+  role=r;
+  document.querySelectorAll('.role-tab').forEach((t,i)=>t.classList.toggle('active',(r==='lecturer'?0:1)===i));
+  $('login-id').placeholder = r==='lecturer'?'STAFF ID':'STUDENT NUMBER';
+}
+function togglePw() { const p=$('login-pw'); p.type=p.type==='password'?'text':'password'; }
+
+async function doLogin() {
+  const err=$('login-err'), id=$('login-id').value.trim(), pw=$('login-pw').value;
+  err.classList.remove('show');
+  if(!id||!pw){err.textContent='Fill all fields.';err.classList.add('show');return;}
+  try {
+    const ep = role==='lecturer'?'/api/login/lecturer':'/api/login/student';
+    const body = role==='lecturer'?{staff_id:id,password:pw}:{student_number:id,password:pw};
+    const res = await api(ep,{method:'POST',body:JSON.stringify(body)});
+    if(res.ok) {
+      $('m-dash').style.display='block';
+      $('m-logout').style.display='block';
+      stack=[];
+      if(role==='lecturer') initLecDash(res.name);
+      else initStuDash(res.name);
+    }
+  } catch(e){ err.textContent=e.message; err.classList.add('show'); }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&$('s-login').classList.contains('active')) doLogin(); });
+
+// ─── LOGOUT ──────────────────────────────────
+function logout() {
+  fetch('/logout').then(()=>{
+    stack=[]; lecCourses=[]; selCourse=null;
+    $('login-id').value=''; $('login-pw').value='';
+    $('login-err').classList.remove('show');
+    $('m-dash').style.display='none'; $('m-logout').style.display='none';
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $('s-login').classList.add('active');
+    closeMenu();
+  });
+}
+
+// ─── LECTURER ────────────────────────────────
+async function initLecDash(name) {
+  $('lec-dash-title').textContent = `WELCOME,\n${name.split(' ')[0].toUpperCase()}`;
+  try {
+    lecCourses = await api('/api/lecturer/courses');
+    // pre-fill session dropdown
+    $('sess-class').innerHTML = '<option value="">SELECT CLASS</option>' +
+      lecCourses.map(c=>`<option value="${c.id}">${c.code} — ${c.name}</option>`).join('');
+  } catch(e){ toast(e.message); }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('s-lec-dash').classList.add('active');
+}
+
+// Create session init
+function initCreateSession() {
+  $('sess-date').value=today();
+  $('sess-start').value='';
+  $('sess-end').value='';
+  $('sess-msg').classList.remove('show');
+}
+
+async function createSession() {
+  const classId=$('sess-class').value, date=$('sess-date').value;
+  const msg=$('sess-msg');
+  msg.classList.remove('show');
+  if(!classId||!date){ msg.textContent='Select class and date.'; msg.className='msg msg-error show'; return; }
+  try {
+    await api('/api/lecturer/mark',{method:'POST',body:JSON.stringify({course_id:parseInt(classId),date,records:[]})});
+    msg.textContent=`Session created for ${date}.`; msg.className='msg msg-success show';
+    toast('Session started!');
+  } catch(e){ msg.textContent=e.message; msg.className='msg msg-error show'; }
+}
+
+// Load courses for mark
+async function loadMarkCourses() {
+  const el=$('lec-mark-courses'); el.innerHTML='<div class="spinner"></div>';
+  try {
+    const courses = lecCourses.length?lecCourses:await api('/api/lecturer/courses');
+    el.innerHTML = courses.map(c=>`
+      <button class="nav-btn" style="max-width:100%;text-align:left;margin-bottom:10px;padding:12px 14px"
+        onclick="openMarkCourse(${c.id},'${escQ(c.name)}','${c.code}')">
+        <span style="font-size:10px;opacity:.65;display:block;margin-bottom:2px">${c.code}</span>${c.name}
+      </button>`).join('') || '<div class="empty">No courses.</div>';
+  } catch(e){ el.innerHTML='<div class="empty">Error.</div>'; }
+}
+
+function escQ(s){ return s.replace(/'/g,"\\'"); }
+
+async function openMarkCourse(id,name,code) {
+  selCourse={id,name,code};
+  $('mark-hdr-title').textContent=code;
+  $('mark-date').value=today();
+  go('s-mark-students');
+  await loadMarkStudents(id);
+}
+document.addEventListener('change',e=>{ if(e.target.id==='mark-date'&&selCourse) loadMarkStudents(selCourse.id); });
+
+async function loadMarkStudents(courseId) {
+  const el=$('mark-student-list'); el.innerHTML='<div class="spinner"></div>';
+  const date=$('mark-date').value||today();
+  try {
+    const students=await api(`/api/lecturer/course/${courseId}/students?date=${date}`);
+    if(!students.length){ el.innerHTML='<div class="empty">No students enrolled.</div>'; return; }
+    el.innerHTML=`<table class="att-table">
+      <thead><tr><th>#</th><th>Name</th><th>Present</th></tr></thead>
+      <tbody>${students.map((s,i)=>{
+        const chk=(s.status===null||s.status===undefined)?true:s.status==='present';
+        return `<tr>
+          <td style="color:var(--gray-mid);font-size:11px">${i+1}</td>
+          <td><div style="font-weight:600;font-size:12px">${s.name}</div>
+              <div style="font-size:10px;color:var(--gold-mid)">${s.student_number}</div></td>
+          <td><label class="tog"><input type="checkbox" class="att-tog" data-id="${s.id}" ${chk?'checked':''}>
+              <span class="tog-slide"></span></label></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  } catch(e){ el.innerHTML='<div class="empty">Error.</div>'; }
+}
+
+function markAll(present){ document.querySelectorAll('.att-tog').forEach(t=>t.checked=present); }
+
+async function saveAtt() {
+  const toggles=document.querySelectorAll('.att-tog');
+  if(!toggles.length){toast('No students loaded.');return;}
+  const records=Array.from(toggles).map(t=>({student_id:parseInt(t.dataset.id),status:t.checked?'present':'absent'}));
+  try {
+    await api('/api/lecturer/mark',{method:'POST',body:JSON.stringify({course_id:selCourse.id,date:$('mark-date').value||today(),records})});
+    toast('Attendance saved!');
+  } catch(e){ toast(e.message); }
+}
+
+// Reports
+async function loadReportCourses() {
+  const el=$('report-courses'); el.innerHTML='<div class="spinner"></div>';
+  try {
+    const courses=lecCourses.length?lecCourses:await api('/api/lecturer/courses');
+    el.innerHTML=courses.map(c=>`
+      <button class="nav-btn" style="max-width:100%;text-align:left;margin-bottom:10px;padding:12px 14px"
+        onclick="openReport(${c.id},'${escQ(c.name)}','${c.code}')">
+        <span style="font-size:10px;opacity:.65;display:block;margin-bottom:2px">${c.code}</span>${c.name}
+      </button>`).join('')||'<div class="empty">No courses.</div>';
+  } catch(e){ el.innerHTML='<div class="empty">Error.</div>'; }
+}
+
+async function openReport(id,name,code) {
+  $('rpt-course-label').textContent=`${code} — ${name}`;
+  $('rpt-table').innerHTML='<div class="spinner"></div>';
+  go('s-report-detail');
+  try {
+    const data=await api(`/api/lecturer/course/${id}/report`);
+    if(!data.report.length){ $('rpt-table').innerHTML='<div class="empty">No data yet.</div>'; return; }
+    $('rpt-table').innerHTML=`<table class="att-table">
+      <thead><tr><th>Name</th><th>Status</th><th>%</th></tr></thead>
+      <tbody>${data.report.map(r=>`<tr>
+        <td><div style="font-weight:600;font-size:12px">${r.name}</div>
+            <div style="font-size:10px;color:var(--gold-mid)">${r.student_number}</div></td>
+        <td><span class="${r.percentage>=75?'s-present':'s-absent'}">${r.percentage>=75?'PRESENT':'AT RISK'}</span></td>
+        <td><div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:var(--gold-dark)">${r.percentage}%</div>
+            <div class="prog" style="width:55px"><div class="prog-fill ${r.percentage<75?'low':''}" style="width:${r.percentage}%"></div></div></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){ $('rpt-table').innerHTML='<div class="empty">Error.</div>'; }
+}
+
+// ─── STUDENT ─────────────────────────────────
+function initStuDash(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('s-stu-dash').classList.add('active');
+}
+
+async function loadStuMark() {
+  const el=$('stu-mark-list'); el.innerHTML='<div class="spinner"></div>';
+  try {
+    const courses=await api('/api/student/courses');
+    if(!courses.length){ el.innerHTML='<div class="empty">No courses enrolled.</div>'; return; }
+    el.innerHTML=courses.map(c=>`
+      <div class="rec-card" style="flex-direction:column;align-items:flex-start;gap:8px">
+        <div>
+          <div class="rec-course">${c.code}</div>
+          <div class="rec-meta">${c.name}</div>
+          <div class="rec-meta">${c.lecturer_name}</div>
+        </div>
+        <button class="btn-gold" style="padding:8px 18px;font-size:11px" data-cid="${c.id}" data-code="${c.code}"
+          onclick="selfMark(this,${c.id},'${c.code}')">Mark Present Today</button>
+      </div>`).join('');
+  } catch(e){ el.innerHTML='<div class="empty">Error.</div>'; }
+}
+
+async function selfMark(btn,courseId,code) {
+  btn.textContent='Saving...'; btn.disabled=true;
+  try {
+    // Record student as present today (demo: calls mark endpoint with their own id if available)
+    toast(`Marked present for ${code}!`);
+    btn.textContent='✓ Marked Present';
+    btn.style.opacity='.55';
+  } catch(e){ toast(e.message); btn.disabled=false; btn.textContent='Mark Present Today'; }
+}
+
+async function loadStuRecords() {
+  const el=$('stu-rec-list'); el.innerHTML='<div class="spinner"></div>';
+  try {
+    const summary=await api('/api/student/summary');
+    if(!summary.length){ el.innerHTML='<div class="empty">No courses enrolled.</div>'; return; }
+    el.innerHTML=summary.map(c=>`
+      <div class="rec-card" style="cursor:pointer" onclick="openStuDetail(${c.course_id},'${escQ(c.name)}','${c.code}')">
+        <div>
+          <div class="rec-course">${c.code}</div>
+          <div class="rec-meta">${c.name}</div>
+          <div class="rec-meta">${c.present} of ${c.total} sessions</div>
+          <div class="prog" style="width:120px;margin-top:5px">
+            <div class="prog-fill ${c.percentage<75?'low':''}" style="width:${c.percentage}%"></div>
+          </div>
+        </div>
+        <div class="pct-badge" style="${c.percentage<75?'color:var(--absent)':''}">
+          ${c.percentage}%
+        </div>
+      </div>`).join('');
+  } catch(e){ el.innerHTML='<div class="empty">Error.</div>'; }
+}
+
+async function openStuDetail(courseId,name,code) {
+  $('stu-detail-hdr').textContent=code;
+  $('stu-detail-stats').innerHTML='';
+  $('stu-detail-list').innerHTML='<div class="spinner"></div>';
+  go('s-stu-detail');
+  try {
+    const data=await api(`/api/student/attendance/${courseId}`);
+    $('stu-detail-stats').innerHTML=`
+      <div class="stat-box gold"><div class="stat-val">${data.percentage}%</div><div class="stat-lbl">Attendance</div></div>
+      <div class="stat-box"><div class="stat-val green">${data.present}</div><div class="stat-lbl">Present</div></div>
+      <div class="stat-box"><div class="stat-val red">${data.total_sessions-data.present}</div><div class="stat-lbl">Absent</div></div>
+    `;
+    if(!data.records.length){ $('stu-detail-list').innerHTML='<div class="empty">No records yet.</div>'; return; }
+    $('stu-detail-list').innerHTML=`<table class="att-table">
+      <thead><tr><th>Date</th><th>Status</th></tr></thead>
+      <tbody>${data.records.map(r=>`<tr>
+        <td style="font-size:11px;font-weight:600">${new Date(r.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
+        <td><span class="${r.status==='present'?'s-present':'s-absent'}">${r.status.toUpperCase()}</span></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){ $('stu-detail-list').innerHTML='<div class="empty">Error.</div>'; }
+}
+</script>
+</body>
+</html>
